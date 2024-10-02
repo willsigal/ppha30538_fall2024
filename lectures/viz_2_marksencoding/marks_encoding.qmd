@@ -52,7 +52,9 @@ data.shape
 
 ```{python}
 data.head(5)
+
 ```
+
 
 For each `country` and `year` (in 5-year intervals), we have
 

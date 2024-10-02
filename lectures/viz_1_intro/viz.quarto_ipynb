@@ -1,0 +1,841 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Visualization (Intro)\"\n",
+        "author: \"Peter Ganong and Maggie Shi\"\n",
+        "date: today\n",
+        "date-format: long\n",
+        "format: \n",
+        "  html:\n",
+        "    echo: true\n",
+        "    toc: true\n",
+        "---\n",
+        "\n",
+        "<!--\n",
+        "    beamer:\n",
+        "        echo: true\n",
+        "        toc: true\n",
+        "        aspectratio: 169\n",
+        "        theme: default\n",
+        "        header-includes: \\renewcommand{\\tightlist}{\\setlength{\\itemsep}{5ex}\\setlength{\\parskip}{0pt}}\n",
+        "            \\setbeamertemplate{footline}[frame number] \n",
+        "            -->\n",
+        "\n",
+        "\n",
+        "# Introduction to Vega-Lite\n",
+        "\n",
+        "## Roadmap\n",
+        "\n",
+        "* Textbook\n",
+        "* What's different from `matplotlib`?\n",
+        "* What is Vega and Vega-Lite?\n",
+        "* First plot -- image and then grammar\n",
+        "\n",
+        "## Citing our sources\n",
+        "\n",
+        "This lecture closely follows an online textbook by Jeffrey Heer, Dominik Moritz, Jake VanderPlas, and Brock Craft.\n",
+        "\n",
+        "https://idl.uw.edu/visualization-curriculum/\n",
+        "\n",
+        "## Declarative approaches to visualization.\n",
+        "\n",
+        "Our old friend `matplotlib` is \"imperative\" meaning that you tell the computer what to do. Implement the visualization in terms of for-loops, low-level drawing commands.\n",
+        "\n",
+        "Good graphics packages are *declarative*, we mean that you can provide a high-level specification of *what* you want the visualization. Three inputs \n",
+        "\n",
+        "* data \n",
+        "* graphical marks \n",
+        "* encoding channels\n",
+        "\n",
+        "We are going to use Vega-Lite + Altair in this class, but this is also done by `seaborn`, `plotly`, `bokeh`, and `plotnine`.\n",
+        "\n",
+        "## What is Vega, Vega-Lite, and Altair?\n",
+        "\n",
+        "A grammar of interactive graphics.\n",
+        "\n",
+        "Just like English has a grammar which lets you write a sentence, graphics can have a grammar that let you make a plot.\n",
+        "\n",
+        "A good grammar should be easy to use and clear (unlike English...).\n",
+        "\n",
+        "New vocabulary:\n",
+        "\n",
+        "* Vega is a sophisticated grammar\n",
+        "* Vega-Lite is a more simple grammar\n",
+        "* [JSON (JavaScript Object Notation)](https://en.wikipedia.org/wiki/JSON) is used to record Vega and Vega-Lite specifications\n",
+        "* Altair is an API enabling Python to write Vega-Lite\n",
+        "\n",
+        "## Other declarative graphics packages\n",
+        "\n",
+        "| # | package | what it is \n",
+        "| --- | --- | --- | \n",
+        "| 1 |  `seaborn` | a wrapper for `matplotlib` to make it easier to use |\n",
+        "| 2 | `plotly` | Designed for apps and dashboards. Some features cost $. | \n",
+        "| 3 | `bokeh` | Designed for apps and dashboards. |\n",
+        "| 4 | `plotnine` | an exact clone of `ggplot2` | \n",
+        "\n",
+        "Why did we choose Altair and not one of these?\n",
+        "\n",
+        "1. Makes beautiful plots, but under the hood it has all the problems that `matplotlib` does\n",
+        "2. We wanted something that was also good for static graphics. Not entirely free.\n",
+        "3. See above.\n",
+        "4. It doesn't make sense for your \"main\" plotting language in Python to be a crude port of something from R.\n",
+        "\n",
+        "## Installation"
+      ],
+      "id": "32b2c9b3"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false \n",
+        "pip install altair\n",
+        "pip install vega_datasets"
+      ],
+      "id": "272a374c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## My first plot -- image "
+      ],
+      "id": "de259a50"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| echo: false \n",
+        "import altair as alt\n",
+        "from vega_datasets import data as vega_data\n",
+        "df = vega_data.seattle_weather()\n",
+        "alt.Chart(df).mark_bar().encode(\n",
+        "    alt.X('month(date)'),\n",
+        "    alt.Y('average(precipitation)')\n",
+        ")"
+      ],
+      "id": "3e090c68",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "[source](https://vega.github.io/vega-lite/#example).\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES for peter only:**\n",
+        "It (embarassingly) took me 15 minutes to make this plot. After trying many fancy things it turned out that I simply had spelled `precipitation` as `precitation` :-(\n",
+        "**END NOTES**\n",
+        ":::\n",
+        "\n",
+        "## My first plot -- grammar\n",
+        "\n",
+        "```{json}\n",
+        "{\n",
+        "  \"data\": {\"url\": \"data/seattle-weather.csv\"},\n",
+        "  \"mark\": \"bar\",\n",
+        "  \"encoding\": {\n",
+        "    \"x\": {\"timeUnit\": \"month\", \"field\": \"date\", \"type\": \"ordinal\"},\n",
+        "    \"y\": {\"aggregate\": \"mean\", \"field\": \"precipitation\"}\n",
+        "  }\n",
+        "}\n",
+        "```\n",
+        "\n",
+        "\n",
+        "* This is designed to be readable for both a human and for Vega. Pretty cool!\n",
+        "\n",
+        "Discussion question: what does each line of text mean?\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "*solution: I think this should be self-evident*\n",
+        ":::\n",
+        "\n",
+        "## Why the emphasis on grammar?\n",
+        "* Packages for doing graphics and coding languages change over time\n",
+        "* We chose to teach a package with an underlying grammar because we are trying to foreground the conceptual aspects of data visualization\n",
+        "* This will hopefully teach you insights that are portable, even as which language you or your staff choose to work in change over time\n",
+        "\n",
+        "\n",
+        "## Summary\n",
+        "\n",
+        "* Use a declarative approach\n",
+        "* Grammar: Vega\n",
+        "* Gives a coherent conceptual representation underlying a plot\n",
+        "\n",
+        "\n",
+        "# Introduction to Altair and datasets\n",
+        "\n",
+        "## What is Altair? + roadmap\n",
+        "\n",
+        "Altair is a Python [API (Application Programming Interface)](https://en.wikipedia.org/wiki/Application_programming_interface) that generates Vega-Lite specifications in JSON\n",
+        "\n",
+        "Roadmap:\n",
+        "\n",
+        "* Load package\n",
+        "* Load data\n",
+        "\n",
+        "## Imports and Renderer\n"
+      ],
+      "id": "38b163b9"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import pandas as pd\n",
+        "import altair as alt"
+      ],
+      "id": "b5050937",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Depending on your environment, you may need to specify a renderer for Altair. If you are using the class-recommended workflow, you should not need to do anything extra. Otherwise, please read the documentation for [Displaying Altair Charts](https://altair-viz.github.io/user_guide/display_frontends.html). If that fails, post in Ed and bring your question to lab.\n",
+        "\n",
+        "## Vega_datasets formatted for Pandas\n",
+        "\n",
+        "We will often use datasets from the [vega-datasets](https://github.com/vega/vega-datasets) repository. Some of these datasets are directly available as Pandas data frames:\n"
+      ],
+      "id": "95350411"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from vega_datasets import data as vega_data\n",
+        "cars = vega_data.cars()              \n",
+        "cars.head()  "
+      ],
+      "id": "b8ca501e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Vega_datasets formatted for JSON"
+      ],
+      "id": "bb0aef89"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#URL if you want \n",
+        "vega_data.cars.url"
+      ],
+      "id": "2229890c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "What you will see if you go to this link\n",
+        "```\n",
+        "   {\n",
+        "      \"Name\":\"chevrolet chevelle malibu\",\n",
+        "      \"Miles_per_Gallon\":18,\n",
+        "      \"Cylinders\":8,\n",
+        "      \"Displacement\":307,\n",
+        "      \"Horsepower\":130,\n",
+        "      \"Weight_in_lbs\":3504,\n",
+        "      \"Acceleration\":12,\n",
+        "      \"Year\":\"1970-01-01\",\n",
+        "      \"Origin\":\"USA\"\n",
+        "   }, ...\n",
+        "```\n",
+        "\n",
+        "Looks less familiar (and more repetitive). Just use `pd.read_json(data.cars.url)` to convert to tabular\n",
+        "\n",
+        "## Weather Data\n",
+        "Statistical visualization in Altair begins with [\"tidy\"](http://vita.had.co.nz/papers/tidy-data.html) data frames. Here, we'll start by creating a simple data frame (`df`) containing the average precipitation (`precip`) for a given `city` and `month` :"
+      ],
+      "id": "f5f74cee"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "df = pd.DataFrame({\n",
+        "    'city': ['Seattle', 'Seattle', 'Seattle', 'New York', 'New York', 'New York', 'Chicago', 'Chicago', 'Chicago'],\n",
+        "    'month': ['Apr', 'Aug', 'Dec', 'Apr', 'Aug', 'Dec', 'Apr', 'Aug', 'Dec'],\n",
+        "    'precip': [2.68, 0.87, 5.31, 3.94, 4.13, 3.58, 3.62, 3.98, 2.56]\n",
+        "})\n",
+        "\n",
+        "df"
+      ],
+      "id": "5f12340f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Summary\n",
+        "\n",
+        "* Altair is an API that enables Python to \"speak\" in Vega-Lite's grammar\n",
+        "* Datasets: cars, weather\n",
+        "\n",
+        "# Building a first chart\n",
+        "\n",
+        "## Building a first chart: roadmap\n",
+        "* incrementally build our first chart\n",
+        "* then build our first aggregated chart\n",
+        "\n",
+        "## The `Chart` object"
+      ],
+      "id": "d1680502"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "chart = alt.Chart(df)"
+      ],
+      "id": "9dda66dd",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## A single point"
+      ],
+      "id": "28abb655"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(df).mark_point()"
+      ],
+      "id": "4013b7b7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Actually this is many points all located in the same place\n",
+        "\n",
+        "## One point per city on y-axis"
+      ],
+      "id": "35dd271f"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(df).mark_point().encode(\n",
+        "  alt.Y('city')\n",
+        ")"
+      ],
+      "id": "f4d63287",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## xy coordinates"
+      ],
+      "id": "d419dfd3"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(df).mark_point().encode(\n",
+        "  alt.X('precip'),\n",
+        "  alt.Y('city')\n",
+        ")"
+      ],
+      "id": "7a96f6eb",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Process: Code is super-duper readable.\n",
+        "\n",
+        "Substance: _Seattle exhibits both the least-rainiest and most-rainiest months!_\n",
+        "\n",
+        "<!-- PG note to self: textbook then discusses encoding but provides no explanation for why this is useful or appropriate. I am skipping it entirely for now, can revisit it later -->\n",
+        "\n",
+        "<!-- MS note to self: check if the order in which `mark_point() and `encode()` go matters. -->\n",
+        "\n",
+        "\n",
+        "## Data Transformation: Aggregation"
+      ],
+      "id": "e1a55187"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(df).mark_point().encode(\n",
+        "  alt.X('average(precip)'),\n",
+        "  alt.Y('city')\n",
+        ")"
+      ],
+      "id": "5485eb7d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Bar plot"
+      ],
+      "id": "f8c9df7b"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(df).mark_bar().encode(\n",
+        "    x='average(precip)',\n",
+        "    y='city'\n",
+        ")"
+      ],
+      "id": "ed227b17",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Syntax: Understanding Altair's shorthands.\n",
+        "\n",
+        "Three ways to say the same idea\n"
+      ],
+      "id": "87d16b42"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false\n",
+        "\n",
+        "# what we will continue to use\n",
+        "alt.X('average(precip)')\n",
+        "\n",
+        "# shorter\n",
+        "x = 'average(precip)'\n",
+        "\n",
+        "#longer\n",
+        "alt.X(aggregate='average', field='precip', type='quantitative')"
+      ],
+      "id": "99b8402c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Customizing a plot -- colors and labels\n"
+      ],
+      "id": "fc41a56f"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(df).mark_point(color='firebrick').encode(\n",
+        "  alt.X('precip', axis=alt.Axis(title='Rain  (in)')),\n",
+        "  alt.Y('city', axis=alt.Axis(title='City')),\n",
+        ")"
+      ],
+      "id": "f8624196",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES**\n",
+        "beyond colors, other properties include \n",
+        "\n",
+        "* whether it should be filled\n",
+        "* opacity\n",
+        "* thickness\n",
+        "* type (shape)\n",
+        "\n",
+        "We will cover all of these in the next lecture\n",
+        "\n",
+        "Color names are the same as matplotlib: https://matplotlib.org/stable/gallery/color/named_colors.html\n",
+        "**END NOTES**\n",
+        ":::\n",
+        "\n",
+        "\n",
+        "## Customizing a visualization -- log scale\n"
+      ],
+      "id": "fab29663"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(df).mark_point(color='firebrick').encode(\n",
+        "  alt.X('precip', scale=alt.Scale(type='log'), axis=alt.Axis(title='Log-Scaled Values')),\n",
+        "  alt.Y('city', axis=alt.Axis(title='City')),\n",
+        ")"
+      ],
+      "id": "57e2cb66",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Building a first chart: summary\n",
+        "\n",
+        "* Everything begins with a `Chart(data)`\n",
+        "* Every `Chart` needs a `mark`\n",
+        "* Every `Chart` needs guidance how to encode the data in terms of `mark`s\n",
+        "* Simple chart formatting: `mark_point(color='firebrick')`, `axis=alt.Axis(title=...)`, `scale=alt.Scale(type='log')`\n",
+        "\n",
+        "## Data Transformation: Do-pair-share\n",
+        "\n",
+        "Make a bar plot showing the **lowest** rainfall for each city in the dataset.\n",
+        "\n",
+        "Hint: Altair's aggregation methods are [here](https://altair-viz.github.io/user_guide/encodings/index.html#aggregation-functions)\n",
+        "\n",
+        "# Multiple Views \n",
+        "\n",
+        "## Multiple Views: roadmap\n",
+        "\n",
+        "* introduce `mark_line()`\n",
+        "* line + `mark_circle()` on one panel\n",
+        "* multiple panels\n",
+        "\n",
+        "## `mark_line()`\n"
+      ],
+      "id": "ebba7ce9"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(cars).mark_line().encode(\n",
+        "    alt.X('Year'),\n",
+        "    alt.Y('average(Miles_per_Gallon)')\n",
+        ")"
+      ],
+      "id": "30efe545",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Multiple Marks -- the long way\n"
+      ],
+      "id": "85a30fcb"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "line = alt.Chart(cars).mark_line().encode(\n",
+        "    alt.X('Year'),\n",
+        "    alt.Y('average(Miles_per_Gallon)')\n",
+        ")\n",
+        "\n",
+        "point = alt.Chart(cars).mark_circle().encode(\n",
+        "    alt.X('Year'),\n",
+        "    alt.Y('average(Miles_per_Gallon)')\n",
+        ")\n",
+        "\n",
+        "line + point"
+      ],
+      "id": "3fa24dd2",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Multiple Marks -- the short way\n"
+      ],
+      "id": "9d338979"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "mpg = alt.Chart(cars).mark_line().encode(\n",
+        "    alt.X('Year'),\n",
+        "    alt.Y('average(Miles_per_Gallon)')\n",
+        ")\n",
+        "\n",
+        "mpg + mpg.mark_circle()"
+      ],
+      "id": "ae776525",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Multiple Marks -- the shortest way\n"
+      ],
+      "id": "5c36d1dc"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false\n",
+        "alt.Chart(cars).mark_line(point=True).encode(\n",
+        "    alt.X('Year'),\n",
+        "    alt.Y('average(Miles_per_Gallon)')\n",
+        ")"
+      ],
+      "id": "bfa81a98",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Multiple Panels "
+      ],
+      "id": "37164031"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "hp = alt.Chart(cars).mark_line().encode(\n",
+        "    alt.X('Year'),\n",
+        "    alt.Y('average(Horsepower)')\n",
+        ")\n",
+        "\n",
+        "(mpg + mpg.mark_circle()) | (hp + hp.mark_circle())"
+      ],
+      "id": "050d23c4",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Multiple Views -- summary\n",
+        "\n",
+        "* `mark_line() + mark_point()` or `mark_line(point=True)`\n",
+        "* `plot1 | plot2` for side-by-side\n",
+        "\n",
+        "Note: this is just a preview, we will do a lot more on multiple views in lecture 6 (textbook's chapter 5).\n",
+        "\n",
+        "# Under the hood: JSON\n",
+        "\n",
+        "## roadmap\n",
+        "\n",
+        "* Beauty of JSON\n",
+        "* Teach how Altair writes JSON via three cumulative examples\n",
+        "* More syntax for working with JSON\n",
+        "* In-class exercise\n",
+        "\n",
+        "## The beauty of JSON\n",
+        "\n",
+        "\"JSON Schema is the vocabulary that enables JSON data consistency, validity, and interoperability at scale.\"\n",
+        "\n",
+        "Documents that are \n",
+        "\n",
+        "* hierarchical (unlike tables)\n",
+        "* interpretable for humans and computers\n",
+        "\n",
+        "https://vega.github.io/schema/vega-lite/v5.json\n",
+        "\n",
+        "## Example from the schema\n",
+        "\n",
+        "\n",
+        "```{json}\n",
+        "    \"Mark\": {\n",
+        "      \"description\": \"All types of primitive marks.\",\n",
+        "      \"enum\": [\n",
+        "        \"arc\",\n",
+        "        \"area\",\n",
+        "        \"bar\",\n",
+        "        \"image\",\n",
+        "        \"line\",\n",
+        "        \"point\",\n",
+        "        \"rect\",\n",
+        "        \"rule\",\n",
+        "        \"text\",\n",
+        "        \"tick\",\n",
+        "        \"trail\",\n",
+        "        \"circle\",\n",
+        "        \"square\",\n",
+        "        \"geoshape\"\n",
+        "      ],\n",
+        "      \"type\": \"string\"\n",
+        "```\n",
+        "\n",
+        "\n",
+        "\n",
+        "## example 1: snippet from Altair\n",
+        "\n",
+        "Altair can best be thought of as a language translator. It writes JSON for you. More specifically, it writes JSON which complies with the grammar rules laid out by Vega-Lite."
+      ],
+      "id": "7086a304"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#python altair object. will explain :Q in next lecture\n",
+        "x = alt.X('average(precipitation):Q') \n",
+        "print(x.to_json())                  "
+      ],
+      "id": "a60401ce",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## example 2: longer snippet from Altair"
+      ],
+      "id": "0e772ee7"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "chart = alt.Chart().mark_bar().encode(\n",
+        "    alt.X('average(precipitation):Q'),\n",
+        "    alt.Y('city:O')\n",
+        ")\n",
+        "print(chart.to_json())"
+      ],
+      "id": "06ede366",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Example 3: add `df` to make the bar plot from earlier in lecture"
+      ],
+      "id": "4e716f44"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "chart = alt.Chart(df).mark_bar().encode(\n",
+        "    alt.X('average(precip)'),\n",
+        "    alt.Y('city')\n",
+        ")\n",
+        "print(chart.to_json())"
+      ],
+      "id": "a9ca7562",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## syntax: `keys()`"
+      ],
+      "id": "1ac92ba0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import json\n",
+        "chart_as_string = chart.to_json()\n",
+        "chart = json.loads(chart_as_string)\n",
+        "chart.keys()"
+      ],
+      "id": "cc72ae97",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## extract dataset\n"
+      ],
+      "id": "07688125"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "chart.get(\"datasets\")"
+      ],
+      "id": "bcc95bf2",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## in-class exercise\n",
+        "\n",
+        "1. extract `chart`'s encoding.\n",
+        "2. extract just the encoding for `x`\n",
+        "\n",
+        "\n",
+        "## summary\n",
+        "\n",
+        "JSON creates documents that are interpretable for humans and computers.\n",
+        "\n",
+        "The JSON schema enforces the grammar rules."
+      ],
+      "id": "ca003e55"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "/Users/willsigal/Library/Python/3.11/share/jupyter/kernels/python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

@@ -1,0 +1,1315 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Visualization (Marks and Encoding)\"\n",
+        "author: \"Peter Ganong and Maggie Shi\"\n",
+        "date: today\n",
+        "date-format: long\n",
+        "format: \n",
+        "    html:\n",
+        "        echo: true\n",
+        "        toc: true\n",
+        "---\n",
+        "\n",
+        "\n",
+        "# Global Health Data\n",
+        "\n",
+        "## Introducing global health data\n",
+        "\n",
+        "* We will be visualizing global health and population data for a number of countries, over the time period of 1955 to 2005. \n",
+        "\n",
+        "* The data was collected by the [Gapminder Foundation](https://www.gapminder.org/) and shared in [Hans Rosling's fantastic TED talk](https://www.youtube.com/watch?v=hVimVzgtD6w). \n",
+        "\n",
+        "* If you haven't seen the talk, we encourage you to watch it first! \n",
+        "\n",
+        "* Roadmap: load data and review first five rows\n",
+        "\n",
+        "## Load data\n",
+        "Let's first load the dataset from the [vega-datasets](https://github.com/vega/vega-datasets) collection into a Pandas data frame.\n"
+      ],
+      "id": "2d8e74b4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import altair as alt\n",
+        "from vega_datasets import data as vega_data"
+      ],
+      "id": "a5c5e89d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false\n",
+        "data = vega_data.gapminder()"
+      ],
+      "id": "83d0c83b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "<!-- Remark: I (Peter) couldn't get the command \n",
+        "data = vega_data.gapminder()\n",
+        "to work. instead, I saved the data to local and I read it in from local. The code chunk which does this is set to echo false so it won't show up in the lecture notes-->\n"
+      ],
+      "id": "fbd8517a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| echo: false\n",
+        "import pandas as pd\n",
+        "data = pd.read_json('data/gapminder.json')"
+      ],
+      "id": "41dc9dfa",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "data.shape"
+      ],
+      "id": "d0308e38",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `head()` + summary\n"
+      ],
+      "id": "5f9ec1f8"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "data.head(5)"
+      ],
+      "id": "a74e28dc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "For each `country` and `year` (in 5-year intervals), we have\n",
+        "\n",
+        "* fertility in terms of the number of children per woman (`fertility`)\n",
+        "* life expectancy in years (`life_expect`)\n",
+        "* total population (`pop`)\n",
+        "* mysterious `cluster` -- what might this represent? We'll try and solve this mystery as we visualize the data!\n",
+        "\n",
+        "\n",
+        "# Data types \n",
+        "\n",
+        "## Data types: roadmap\n",
+        "\n",
+        "Pandas data frames come with types. When loading data not from pandas, explicitly name:\n",
+        "\n",
+        "- `'N'` indicates a *nominal* type (unordered, categorical data),\n",
+        "- `'O'` indicates an *ordinal* type (rank-ordered data),\n",
+        "- `'Q'` indicates a *quantitative* type (numerical data with meaningful magnitudes), and\n",
+        "- `'T'` indicates a *temporal* type (date/time data)\n",
+        "\n",
+        "\n",
+        "## Nominal (N)\n",
+        "\n",
+        "* *Nominal* data (also called *categorical* data) consist of category names. \n",
+        "* Ask *is value A the same or different than value B? (A = B)*, supporting statements like “A is equal to B” or “A is not equal to B”.\n",
+        "    * In the dataset above, the `country` field is `N`ominal.\n",
+        "* When visualizing nominal data we should readily be able to see if values are the same or different: position, color hue (blue, red, green), and shape can help. \n",
+        "    * Remark: using a `size` channel to encode nominal data might mislead us, suggesting rank-order or magnitude differences among values that do not exist!\n",
+        "\n",
+        "## Ordinal (O)\n",
+        "\n",
+        "* *Ordinal* data consist of values that have a specific ordering.\n",
+        "* Ask: *does value A come before or after value B? (A < B)*, supporting statements like “A is less than B” or “A is greater than B”.\n",
+        "    * In the dataset above, we can treat the `year` field as `O`rdinal.\n",
+        "* When visualizing ordinal data, we should perceive a sense of rank-order. Position, size, or color value (brightness) might be appropriate.\n",
+        "    * Remark: color hue (which is not perceptually ordered) would be less appropriate.\n",
+        "\n",
+        "## Quantitative (Q)\n",
+        "\n",
+        "* With *quantitative* data we can measure numerical differences among values. There are multiple sub-types of quantitative data:\n",
+        "    * With *interval* data ask: *what is the distance to value A from value B? (A - B)*, supporting statements such as “A is 12 units away from B”.\n",
+        "    * With *ratio* data can also ask:\n",
+        "        * *how many are there of value A?* supporting statements such as \"how many babies per parent?\"\n",
+        "        * *value A is what proportion of value B? (A / B)*, supporting statements such as “A is 10% of B” or “B is 7 times larger than A”. \n",
+        "    * In the dataset above, `year` is a quantitative interval field (depending on whose history of the world you prefer, there are many choices for the year \"zero\"), whereas `fertility` and `life_expect` are quantitative ratio fields (zero is meaningful for calculating proportions).\n",
+        "* Vega-Lite represents quantitative data, but does not make a distinction between interval and ratio types.\n",
+        "* Quantitative values can be visualized using position, size, or color value, among other channels. \n",
+        "\n",
+        "\n",
+        "## Quantitative (Q), continued\n",
+        "* recap\n",
+        "    * with *interval* data ask: *what is the distance to value A from value B? (A - B)*\n",
+        "    * With *ratio* data can also ask:\n",
+        "        * *how many are there of value A?* \n",
+        "        * *value A is what proportion of value B? (A / B)*,\n",
+        "* Textbook: \"An axis with a zero baseline is essential for proportional comparisons of ratio values, but can be safely omitted for interval comparisons.\"\n",
+        "* Discussion question -- Why is it so important to include zeros for ratio data? Can you give a counter-example where omitting zeros on the plot would lead the reader to misleading conclusions? \n",
+        "\n",
+        "\n",
+        "## Temporal (T)\n",
+        "\n",
+        "* *Temporal* values measure time points or intervals. This type is a special case of quantitative values (timestamps) with rich semantics and conventions (i.e., the [Gregorian calendar](https://en.wikipedia.org/wiki/Gregorian_calendar)). \n",
+        "* Example temporal values include date strings such as `“2019-01-04”` and `“Jan 04 2019”`, as well as standardized date-times such as the [ISO date-time format](https://en.wikipedia.org/wiki/ISO_8601): `“2019-01-04T17:50:35.643Z”`.\n",
+        "* There are no temporal values in our global development dataset above, as the `year` field is simply encoded as an integer. \n",
+        "\n",
+        "\n",
+        "## Discussion question I\n",
+        "\n",
+        "What are examples of variables that are \n",
+        "\n",
+        "* `N`ominal\n",
+        "* `O`rdinal\n",
+        "* `Q`uantitative\n",
+        "\n",
+        "Let's try to come up with at least three examples of each. For each example, state the comparison in a sentence.\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "Solution: the hard one here is nominal. \n",
+        "\n",
+        "examples can be \n",
+        "* geographic units\n",
+        "* different types of health services\n",
+        "* different types of housing\n",
+        ":::\n",
+        "\n",
+        "\n",
+        "\n",
+        "## Discussion question II\n",
+        "\n",
+        "Suppose we have a dataset of ages (10 years old, 20 years old, 10 years old, 30 years old). What would it mean for these data to be\n",
+        "\n",
+        "* `N`ominal\n",
+        "* `O`rdinal\n",
+        "* `Q`uantitative\n",
+        "\n",
+        "What comparisons are feasible with each data type?\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "solution: Just because a data field is represented using a number doesn't mean we have to treat it as a quantitative type! For example, we might interpret a set of ages (10 years old, 20 years old, etc) as \n",
+        "\n",
+        "* nominal (underage or overage), \n",
+        "* ordinal (grouped by year), \n",
+        "* quantitative (calculate average age).\n",
+        ":::\n",
+        "\n",
+        "\n",
+        "## Revisit plot from beginning of prior lecture"
+      ],
+      "id": "d008661d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "seattle = vega_data.seattle_weather()\n",
+        "alt.Chart(seattle).mark_bar().encode(\n",
+        "    x = 'month(date):O',\n",
+        "    y = 'average(precipitation):Q'\n",
+        ")"
+      ],
+      "id": "fb006fb1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## In-class exercises\n",
+        "\n",
+        "What happens when...\n",
+        "\n",
+        "* Make `precipitation` ordinal\n",
+        "* Revert. then make `date` temporal. There's a consequential but subtle change relative to the original plot. What is it?\n",
+        "\n",
+        "\n",
+        "\n",
+        "## data types: summary\n",
+        "\n",
+        "A single data series can have multiple meanings depending on data type\n",
+        "\n",
+        "- `'N'` indicates a *nominal* type (unordered, categorical data),\n",
+        "- `'O'` indicates an *ordinal* type (rank-ordered data),\n",
+        "- `'Q'` indicates a *quantitative* type (numerical data with meaningful magnitudes), and\n",
+        "- `'T'` indicates a *temporal* type (date/time data)\n",
+        "\n",
+        "Explicitly specify the data type so that Altair/Vega know how to interpret it. If you don't specify a data type (as was the case in Lecture 1), Vega will guess. This can lead to undesired results!\n",
+        "\n",
+        "\n",
+        "# Visual encoding\n",
+        "\n",
+        "## Visual encoding roadmap\n",
+        "\n",
+        "* Seven types of visual encoding\n",
+        "* More on color\n",
+        "\n",
+        "## Seven ways of visual encoding\n",
+        "\n",
+        "> Within the plane a mark can be at the top or the bottom, to the right or the left. The eye perceives two independent dimensions along X and Y, which are distinguished orthogonally. A variation in light energy produces a third dimension in Z, which is independent of X and Y…\n",
+        "\n",
+        "> The eye is sensitive, along the Z dimension, to 6 independent visual variables, which can be superimposed on the planar figures: \n",
+        "\n",
+        "> * the size of the marks\n",
+        "* their value [brightness]\n",
+        "* texture\n",
+        "* color [hue]\n",
+        "* orientation\n",
+        "* shape. \n",
+        "\n",
+        "> They can represent differences (≠), similarities (≡), a quantified order (Q), or a nonquantified order (O), and can express groups, hierarchies, or vertical movements.\n",
+        "\n",
+        "Source:  Jacques Bertin in Semiology of Graphics (1967), via [source](https://medium.com/@mbostock/introducing-d3-scale-61980c51545f)\n",
+        "\n",
+        "\n",
+        "## Seven ways of visual encoding in one image\n",
+        "\n",
+        "![Visual encoding](pictures/visual_encoding.jpg)\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "*talk through a few aspects of this image. The examples are a bit gratuitous. Most of the information content is in the boxes in the first two columns\n",
+        "\n",
+        "The rows more or less rank different visual elements from most to least noticeable. Looking at the extremes, XY coordinates can convey both quantified and non-quantified order as well as whether two things are equal. at the other extreme, shape cannot tell you at all about order, it can just tell if you if two things are the same or different.*\n",
+        ":::\n",
+        "\n",
+        "\n",
+        "Free advice: don't try to use all seven ways of encoding information in a single plot. It will inevitably be overload.\n",
+        "\n",
+        "## More depth on color\n",
+        "\n",
+        "Language note: by `color`, we mean both brightness (which Bertin calls \"value\") and hue (which Bertin calls \"color\")\n",
+        "\n",
+        "Why choose color deliberately?\n",
+        "\n",
+        "* Using any software's default color palette is kind of like using comic sans font on a resume\n",
+        "* Choosing the \"right\" colors will make it easier for you to convey meaning\n",
+        "\n",
+        "## Color palettes and their use cases\n",
+        "\n",
+        "Toggle back and forth to the [schemes](https://vega.github.io/vega/docs/schemes/) page: \n",
+        "\n",
+        "***step 1***  Am I working with `N`ominal, unordered data or with ordered data (either `O`rdinal or `Q`uantitative)? \n",
+        "\n",
+        "If `N`ominal, unordered data, use categorical palettes. Otherwise, proceed.\n",
+        "\n",
+        "***step 2*** \n",
+        "\n",
+        "| Palette type | Use case | \n",
+        "| --- | --- | \n",
+        "| Sequential Single-Hue |  | \n",
+        "| Sequential Multi-Hue | Use for higher contrast, but harder to judge quantitative proximity |\n",
+        "| Diverging | Use if there is a midpoint (e.g. voting for `redblue`) |\n",
+        "| Cyclical | Use if circular (e.g. time of day, month) |\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "*flip back and forth between each of these palette types and the examples on the website. Be sure to click \"View discrete\" as well*\n",
+        ":::\n",
+        "\n",
+        "\n",
+        "## More advice on color choices\n",
+        "\n",
+        "* Use [colorbrewer2.org](https://colorbrewer2.org) to choose your color palettes. Click through to site. Options include subsetting to colors that are\n",
+        "    * colorblind safe\n",
+        "    * black and white printer (aka photocopy) safe\n",
+        "\n",
+        "* Harmonization\n",
+        "    * *Within reports* You rarely produce a single plot in isolation. You usually produce several plots as part of a memo, a website, etc. Use consistent colors across plots.\n",
+        "    * *Across reports* Many organizations have official palettes and plot templates. Good to ask if you are working for a big org if they have one.\n",
+        "    \n",
+        "\n",
+        "## Visual encoding: summary\n",
+        "\n",
+        "* Bertin proposes seven different ways to encode visual information. His chart is a handy reference to what visual elements can encode different types of information.\n",
+        "* Color is one of the easiest ways to convey meaning. Choose your palette based on whether you want to convey unordered or ordered data, whether you have a midpoint, and whether your ordered series is cyclical\n",
+        "\n",
+        "# Encoding channels\n",
+        "\n",
+        "## Encoding channels: roadmap\n",
+        "\n",
+        "- `x`\n",
+        "- `y`\n",
+        "- `size`\n",
+        "- `color`\n",
+        "- `opacity`\n",
+        "- `shape`\n",
+        "- `column`\n",
+        "- `row`\n",
+        "\n",
+        "Caveats: \n",
+        "\n",
+        "* there are a ton of slides in this section.\n",
+        "* but each slide is simple. focus is on software. most discussion of principles deferred for the \"Graphics Theory\" section.\n",
+        "\n",
+        "## X\n"
+      ],
+      "id": "d05dc6bc"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "data2000 = data.loc[data['year'] == 2000] #one year is more manageable\n",
+        "alt.Chart(data2000).mark_point().encode(\n",
+        "    alt.X('fertility:Q')\n",
+        ")"
+      ],
+      "id": "c2adc251",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Y "
+      ],
+      "id": "630c1a9d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point().encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('cluster:O')\n",
+        ")"
+      ],
+      "id": "e9ad7984",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "In-class exercise: what happens if you swap the Q and the O types?\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "solution: \n",
+        "\n",
+        "* treating fertility as a categorical variable means you get a separate\n",
+        "category on the x-axis for every single value of fertility\n",
+        "* treating cluster as a quantitative variable means you get extra grid marks\n",
+        ":::\n",
+        "\n",
+        "\n",
+        "\n",
+        "## Do not require zero on axis range "
+      ],
+      "id": "6f67aa69"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "zero_included = alt.Chart(data2000).mark_point().encode(\n",
+        "    alt.X('fertility:Q', scale=alt.Scale(zero=False)),\n",
+        "    alt.Y('life_expect:Q', scale=alt.Scale(zero=False))\n",
+        ")\n",
+        "zero_excluded = alt.Chart(data2000).mark_point().encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q')\n",
+        ")\n",
+        "zero_included | zero_excluded"
+      ],
+      "id": "0efc0ba9",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Discussion question: which plot do you prefer (and why?)\n",
+        "\n",
+        "\n",
+        "## `size`"
+      ],
+      "id": "e05559be"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point().encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q')\n",
+        ")"
+      ],
+      "id": "15db6bad",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `size` with 1000 pixels for largest dot"
+      ],
+      "id": "91b7c8b4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point().encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000]))\n",
+        ")"
+      ],
+      "id": "7a18a5af",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "alt.Scale(range=[0,1000]) indicates that the visual size of the marks, and is not in reference to anything in the underlying data \n",
+        ":::\n",
+        "\n",
+        "\n",
+        "\n",
+        "## add `color` and `size` with `filled=True`"
+      ],
+      "id": "e03cbbf4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point(filled=True).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000])),\n",
+        "    alt.Color('cluster:N')\n",
+        ")"
+      ],
+      "id": "02b4a1b8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `opacity`"
+      ],
+      "id": "02d1dd03"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point(filled=True).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000])),\n",
+        "    alt.Color('cluster:N'),\n",
+        "    alt.OpacityValue(0.2)\n",
+        ")"
+      ],
+      "id": "7637e20a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `column` "
+      ],
+      "id": "91ca2836"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point(filled=True).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000])),\n",
+        "    alt.Color('cluster:N'),\n",
+        "    alt.OpacityValue(0.5),\n",
+        "    alt.Tooltip('country:N'),\n",
+        "    alt.Column('cluster:N')\n",
+        ")"
+      ],
+      "id": "5a36f35b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## adjust aspect ratio, move pop legend, remove color legend"
+      ],
+      "id": "1dd4d41d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point(filled=True).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000]),\n",
+        "             legend=alt.Legend(orient='bottom', titleOrient='left')),\n",
+        "    alt.Color('cluster:N', legend=None),\n",
+        "    alt.OpacityValue(0.5),\n",
+        "    alt.Tooltip('country:N'),\n",
+        "    alt.Column('cluster:N')\n",
+        ").properties(width=135, height=135)"
+      ],
+      "id": "3be9a49c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## in-class exercise\n",
+        "\n",
+        "The plot faceted by column doesn't fit on the page. Redo it instead faceted by row.\n",
+        "\n",
+        "Bonus: It still looks bad. What further change is needed?\n",
+        "\n",
+        "## Encoding channels: summary\n",
+        "\n",
+        "- `x`: Horizontal (x-axis) position of the mark.\n",
+        "- `y`: Vertical (y-axis) position of the mark.\n",
+        "- `size`: Size of the mark. May correspond to area or length, depending on the mark type.\n",
+        "- `color`: Mark color, specified as a [legal CSS color](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).\n",
+        "- `opacity`: Mark opacity, ranging from 0 (fully transparent) to 1 (fully opaque).\n",
+        "- `shape`: Plotting symbol shape for `point` marks.\n",
+        "- `column`: Facet the data into horizontally-aligned subplots.\n",
+        "- `row`: Facet the data into vertically-aligned subplots.\n",
+        "\n",
+        "# Graphical marks\n",
+        "\n",
+        "## Graphical marks: roadmap\n",
+        "\n",
+        "Prior section used only `mark_point()`. Now will cover\n",
+        "\n",
+        "- `mark_point()`\n",
+        "    - `mark_circle()`\t\n",
+        "    - `mark_square()` \n",
+        "    - `mark_tick()` \n",
+        "- `mark_bar()`\n",
+        "- `mark_line()`  \n",
+        "- `mark_area()` \n",
+        "\n",
+        "\n",
+        "Caveats: \n",
+        "\n",
+        "* there are a ton of slides in this section.\n",
+        "* but each slide is simple. focus is on software. most discussion of principles deferred for the \"Graphics Theory\" section.\n",
+        "\n",
+        "## `mark_point()`: add information using `alt.Shape()` "
+      ],
+      "id": "1a823e28"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point().encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q', scale=alt.Scale(zero=False)),\n",
+        "    alt.Shape('cluster:N')\n",
+        ")"
+      ],
+      "id": "bd86b81c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_point()`: format points using arguments"
+      ],
+      "id": "a6326961"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point(filled=True, size=100).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q', scale=alt.Scale(zero=False)),\n",
+        "    alt.Shape('cluster:N')\n",
+        ")"
+      ],
+      "id": "19dec9c5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_circle()` wrapper for `mark_point(filled=True)`"
+      ],
+      "id": "9b730c74"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false\n",
+        "alt.Chart(data2000).mark_circle(size=100).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q', scale=alt.Scale(zero=False)),\n",
+        "    alt.Shape('cluster:N')\n",
+        ")"
+      ],
+      "id": "622e01bd",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_square()`"
+      ],
+      "id": "f0175d04"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_square(size=100).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q', scale=alt.Scale(zero=False)),\n",
+        "    alt.Shape('cluster:N')\n",
+        ")"
+      ],
+      "id": "cb2017a7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_tick()`\n",
+        "\n",
+        "* Useful for comparing values along a single dimension with minimal overlap. \n",
+        "* A *dot plot* drawn with tick marks is sometimes referred to as a *strip plot*.\n"
+      ],
+      "id": "7a5de2ac"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_tick().encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('cluster:N')\n",
+        ")"
+      ],
+      "id": "fca29433",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_bar()`\n"
+      ],
+      "id": "744e2caa"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_bar().encode(\n",
+        "    alt.X('country:N'),\n",
+        "    alt.Y('pop:Q')\n",
+        ")"
+      ],
+      "id": "4ed6f977",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## use `alt.Color()` for a stacked bar plot\n"
+      ],
+      "id": "805554a3"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_bar().encode(\n",
+        "    alt.X('cluster:N'),\n",
+        "    alt.Y('pop:Q'),\n",
+        "    alt.Color('country:N', legend=None) \n",
+        ")"
+      ],
+      "id": "9e049e9e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Note: if we had instead set `alt.Y('pop:Q', stack=None)`, bars would have been overlapped with each other\n",
+        "\n",
+        "## `X2()` to show intervals\n"
+      ],
+      "id": "4471a083"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_bar().encode(\n",
+        "    alt.X('min(life_expect):Q'),\n",
+        "    alt.X2('max(life_expect):Q'),\n",
+        "    alt.Y('cluster:N')\n",
+        ")"
+      ],
+      "id": "f4959f81",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_line()` "
+      ],
+      "id": "ee1b0a2e"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "data_4a = data.loc[data['cluster'] == 2] #one cluster is more manageable\n",
+        "alt.Chart(data_4a).mark_line().encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('fertility:Q'),\n",
+        "    alt.Color('country:N')\n",
+        ").properties(\n",
+        "    width=400\n",
+        ")"
+      ],
+      "id": "5c514ea3",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## how many lines? `Tooltip` instead of `legend`\n",
+        "\n",
+        "textbook advocates for having a plot with many more lines, no legend, and instead using `alt.Tooltip('country:N')`. This is technologically feasible but a bad idea. (Discuss: why?)\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "***NOTES:**\n",
+        "Solution: plot is still illegible! too many lines. In addition, the tooltip is stupid, it only gives you a name when you mouse over the invisible dot, not when you mouse over the line\n",
+        ":::\n"
+      ],
+      "id": "3b8c09a5"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data).mark_line().encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('fertility:Q'),\n",
+        "    alt.Color('country:N', legend=None),\n",
+        "    alt.Tooltip('country:N')\n",
+        ").properties(\n",
+        "    width=400\n",
+        ")"
+      ],
+      "id": "50fbbfb0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_line()` with cosmetic adjustments"
+      ],
+      "id": "556223b5"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data_4a).mark_line(\n",
+        "    strokeWidth=3,\n",
+        "    opacity=0.5,\n",
+        "    interpolate='monotone'\n",
+        ").encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('fertility:Q'),\n",
+        "    alt.Color('country:N')\n",
+        ").properties(\n",
+        "    width=400\n",
+        ")"
+      ],
+      "id": "97cf4653",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_line()` with cosmetic adjustments"
+      ],
+      "id": "4e60f54b"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "data_4a_2y = data_4a[data_4a['year'].isin([1955, 2005])]\n",
+        "alt.Chart(data_4a_2y).mark_line().encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('fertility:Q'),\n",
+        "    alt.Color('country:N')\n",
+        ").properties(\n",
+        "    width=400\n",
+        ")"
+      ],
+      "id": "2b49c64a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_area()`\n"
+      ],
+      "id": "3d5b0d08"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "dataUS = data.loc[data['country'] == 'United States']\n",
+        "\n",
+        "alt.Chart(dataUS).mark_area().encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('fertility:Q')\n",
+        ")"
+      ],
+      "id": "6bcade01",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_area()` with `interpolate='monotone'`\n"
+      ],
+      "id": "0e9faa97"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(dataUS).mark_area(interpolate='monotone').encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('fertility:Q')\n",
+        ")"
+      ],
+      "id": "d160ee2e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_area()` with stacking\n"
+      ],
+      "id": "f37cf657"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "dataNA = data[data['country'].isin(['United States', 'Mexico', 'Canada'])]\n",
+        "alt.Chart(dataNA).mark_area().encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('pop:Q'),\n",
+        "    alt.Color('country:N')\n",
+        ")"
+      ],
+      "id": "bd3739cf",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_area()` with no stacking and opacity"
+      ],
+      "id": "6ad652c5"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(dataNA).mark_area(opacity=0.5).encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('pop:Q', stack=None),\n",
+        "    alt.Color('country:N')\n",
+        ")"
+      ],
+      "id": "bbe9a409",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `mark_area()` to show range"
+      ],
+      "id": "ddb236b0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(dataNA).mark_area().encode(\n",
+        "    alt.X('year:O'),\n",
+        "    alt.Y('min(fertility):Q'),\n",
+        "    alt.Y2('max(fertility):Q')\n",
+        ").properties(\n",
+        "    width={\"step\": 40}\n",
+        ")"
+      ],
+      "id": "23a923c0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "We can see a larger range of values in 1995, from just under 4 to just under 7. By 2005, both the overall fertility values and the variability have declined, centered around 2 children per familty.\n",
+        "\n",
+        "\n",
+        "## Syntax: `mark_area()` swap axes"
+      ],
+      "id": "82e70cf0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(dataNA).mark_area().encode(\n",
+        "    alt.Y('year:O'),\n",
+        "    alt.X('min(fertility):Q'),\n",
+        "    alt.X2('max(fertility):Q')\n",
+        ").properties(\n",
+        "    width={\"step\": 40}\n",
+        ")"
+      ],
+      "id": "3f88a5b0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Graphical marks: summary\n",
+        "\n",
+        "Covered today\n",
+        "\n",
+        "- `mark_point()` - Scatter plot points with configurable shapes.\n",
+        "    - `mark_circle()`\t- Scatter plot points as filled circles.\n",
+        "    - `mark_square()` - Scatter plot points as filled squares.\n",
+        "    - `mark_tick()` - Vertical or horizontal tick marks.\n",
+        "- `mark_bar()` -\tRectangular bars.\n",
+        "- `mark_line()` - Connected line segments.\n",
+        "- `mark_area()` - Filled areas defined by a top-line and a baseline.\n",
+        "\n",
+        "Not covered in lecture\n",
+        "\n",
+        "- `mark_rect()` - Filled rectangles, useful for heatmaps.\n",
+        "- `mark_rule()` - Vertical or horizontal lines spanning the axis.\n",
+        "- `mark_text()` - Scatter plot points represented by text.\n",
+        "\n",
+        "For a complete list, and links to examples, see the [Altair marks documentation](https://altair-viz.github.io/user_guide/marks/index.html).\n",
+        "\n",
+        "\n",
+        "# Interactivity and publishing\n",
+        "\n",
+        "## Interactivity and publishing: roadmap\n",
+        "\n",
+        "* interactivity example\n",
+        "* production quality\n",
+        "* publishing\n",
+        "\n",
+        "\n",
+        "##  `tooltip` I \n",
+        "- `tooltip`: Tooltip text to display upon mouse hover over the mark.\n",
+        "- `order`: Mark ordering, determines line/area point order and drawing order.\n"
+      ],
+      "id": "c73abbec"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point(filled=True).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000])),\n",
+        "    alt.Color('cluster:N'),\n",
+        "    alt.OpacityValue(0.5),\n",
+        "    alt.Tooltip('country:N')\n",
+        ")"
+      ],
+      "id": "5e7e7c26",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "As you mouse around you may notice that you can not select some of the points. For example, what happens when you try to select the country underneath India? To fix this problem, we can use the `order` encoding channel.\n",
+        "\n",
+        "##  `tooltip` II"
+      ],
+      "id": "33742529"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "alt.Chart(data2000).mark_point(filled=True).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000])),\n",
+        "    alt.Color('cluster:N'),\n",
+        "    alt.OpacityValue(0.5),\n",
+        "    alt.Tooltip('country:N'),\n",
+        "    alt.Order('pop:Q', sort='descending')\n",
+        ")"
+      ],
+      "id": "eb6b659a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `tooltip` III "
+      ],
+      "id": "c795b661"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "final_chart = alt.Chart(data2000).mark_point(filled=True).encode(\n",
+        "    alt.X('fertility:Q'),\n",
+        "    alt.Y('life_expect:Q'),\n",
+        "    alt.Size('pop:Q', scale=alt.Scale(range=[0,1000])),\n",
+        "    alt.Color('cluster:N'),\n",
+        "    alt.OpacityValue(0.5),\n",
+        "    alt.Order('pop:Q', sort='descending'),\n",
+        "    tooltip = [\n",
+        "        alt.Tooltip('country:N'),\n",
+        "        alt.Tooltip('fertility:Q'),\n",
+        "        alt.Tooltip('life_expect:Q')\n",
+        "    ]   \n",
+        ")\n",
+        "final_chart"
+      ],
+      "id": "8bc0dfd8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Discussion question -- using your newfound `tooltip` expertise, what does each cluster correspond to?\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES:**\n",
+        "\n",
+        "* 0 -- South Asia\n",
+        "* 1 -- Europe\n",
+        "* 2 -- Africa\n",
+        "* 3 -- Americas\n",
+        "* 4 -- East Asia\n",
+        "* 5 -- Middle East\n",
+        ":::\n",
+        "\n",
+        "## Production-quality interactive plot\n",
+        "(no need to understand all the details)"
+      ],
+      "id": "4f848b30"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "cars = vega_data.cars() \n",
+        "\n",
+        "# create an interval selection over an x-axis encoding\n",
+        "brush = alt.selection_interval(encodings=['x'])\n",
+        "\n",
+        "# determine opacity based on brush\n",
+        "opacity = alt.condition(brush, alt.value(0.9), alt.value(0.1))\n",
+        "\n",
+        "# an overview histogram of cars per year\n",
+        "# add the interval brush to select cars over time\n",
+        "overview = alt.Chart(cars).mark_bar().encode(\n",
+        "    alt.X('Year:O', timeUnit='year', # extract year unit, treat as ordinal\n",
+        "      axis=alt.Axis(title=None, labelAngle=0) # no title, no label angle\n",
+        "    ),\n",
+        "    alt.Y('count()', title=None), # counts, no axis title\n",
+        "    opacity=opacity\n",
+        ").add_params(\n",
+        "    brush      # add interval brush selection to the chart\n",
+        ").properties(\n",
+        "    width=400, # set the chart width to 400 pixels\n",
+        "    height=50  # set the chart height to 50 pixels\n",
+        ")\n",
+        "\n",
+        "# a detail scatterplot of horsepower vs. mileage\n",
+        "# modulate point opacity based on the brush selection\n",
+        "detail = alt.Chart(cars).mark_point().encode(\n",
+        "    alt.X('Horsepower'),\n",
+        "    alt.Y('Miles_per_Gallon'),\n",
+        "    # set opacity based on brush selection\n",
+        "    opacity=opacity\n",
+        ").properties(width=400) # set chart width to match the first chart\n",
+        "\n",
+        "# vertically concatenate (vconcat) charts using the '&' operator\n",
+        "overview & detail"
+      ],
+      "id": "670f035a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Publishing\n"
+      ],
+      "id": "a2d24af4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "final_chart\n",
+        "final_chart.save('output/chart.html')"
+      ],
+      "id": "3eee3564",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| eval: false\n",
+        "final_chart.save('output/chart.png')"
+      ],
+      "id": "0c799184",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Remark: `chart.save()` is important for anything where you want your output to be reproducible in the future.\n",
+        "\n",
+        "Discussion q -- What is difference between \"View Source\" and \"View Compiled Vega\"?\n",
+        "\n",
+        "::: {.notes .content-visible when-profile=\"speaker\"}\n",
+        "**NOTES**\n",
+        "open the file. Click three dots at top. \n",
+        "\n",
+        "**discussion q**\n",
+        "View source is the vega-lite in JSON which is written by Altair\n",
+        "\n",
+        "Vega-lite is designed to be human intelligible, but it's not actually enough information for Vega to make a plot. So there's an additional \"under the hood step\" which goes from Vega-Lite to Vega\n",
+        "**END NOTES**\n",
+        ":::\n",
+        "\n",
+        "## Interactivity and publishing: summary\n",
+        "\n",
+        "* Altair can make some nice interactive plots! \n",
+        "* Especially useful for data exploration.\n",
+        "* If you want to learn more about interactive plots in Altair, see chapter 6 in the textbook. However, we actually are going to use a different package (Shiny) to teach about how to make interactive plots.\n",
+        "* Use `chart.save()` to write a plot to disk"
+      ],
+      "id": "3fe32ea3"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "/Users/willsigal/Library/Python/3.11/share/jupyter/kernels/python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
